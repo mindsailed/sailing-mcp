@@ -240,10 +240,10 @@ Tools that require a key only appear in <code>tools/list</code> when that key is
   <p style="color:var(--muted);font-size:13px;margin-top:8px">Leave a field empty to skip that provider. Keys never leave your browser — this page is static.</p>
 </div>
 
-<h2>Connect from a Claude client</h2>
+<h2>Connect from a client</h2>
 
 <h3>Claude Code</h3>
-<pre><code>claude mcp add --transport http windy "<span id="cli">https://sailing-mcp.dutch-atlas.com/mcp</span>"</code></pre>
+<pre><code>claude mcp add --transport http sailing "<span id="cli">https://sailing-mcp.dutch-atlas.com/mcp</span>"</code></pre>
 
 <h3>Claude.ai (Pro / Max / Team / Enterprise)</h3>
 <p style="margin-top:4px">Settings → <strong>Connectors</strong> → <strong>Add custom connector</strong>. Set <em>Remote MCP server URL</em> to the URL above. No OAuth required.</p>
@@ -252,12 +252,30 @@ Tools that require a key only appear in <code>tools/list</code> when that key is
 <p style="margin-top:4px">Edit <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
 <pre><code>{
   "mcpServers": {
-    "windy": {
+    "sailing": {
       "command": "npx",
       "args": ["-y", "mcp-remote", "<span id="desk">https://sailing-mcp.dutch-atlas.com/mcp</span>", "--transport", "http-only"]
     }
   }
 }</code></pre>
+
+<h3>ChatGPT (Plus / Pro / Business)</h3>
+<p style="margin-top:4px">In the browser at <a href="https://chatgpt.com" target="_blank" rel="noopener">chatgpt.com</a>, signed in:</p>
+<ol style="margin-top:4px">
+  <li>Avatar menu → <strong>Settings</strong> → <strong>Apps</strong>.</li>
+  <li>Open <strong>Advanced settings</strong> and turn on <strong>Developer mode</strong> (it's flagged "elevated risk" — this is what lets you add a custom MCP server).</li>
+  <li>Back in <strong>Apps</strong>, click <strong>Create app</strong> (next to Advanced settings).</li>
+  <li>In the <strong>New App</strong> dialog:
+    <ul>
+      <li><strong>Name:</strong> <code>Sailing MCP</code></li>
+      <li><strong>Connection:</strong> <code>Server URL</code></li>
+      <li><strong>URL:</strong> <code id="gpt">https://sailing-mcp.dutch-atlas.com/mcp</code> (paste the key-builder URL above if you have provider keys)</li>
+      <li><strong>Authentication:</strong> <code>No Auth</code></li>
+      <li>Tick <em>"I understand and want to continue"</em>, then <strong>Create</strong>.</li>
+    </ul>
+  </li>
+  <li>The app shows up under <strong>Enabled apps</strong>. In a chat, open the <strong>+ / Apps</strong> menu and enable <strong>Sailing MCP</strong> to let it use the tools.</li>
+</ol>
 
 <h2>Where to get keys</h2>
 <ul>
@@ -308,6 +326,7 @@ Tools that require a key only appear in <code>tools/list</code> when that key is
   const out = document.getElementById('out');
   const cli = document.getElementById('cli');
   const desk = document.getElementById('desk');
+  const gpt = document.getElementById('gpt');
   const inputs = {
     key: document.getElementById('k_windy'),
     worldtidesKey: document.getElementById('k_wt'),
@@ -325,6 +344,7 @@ Tools that require a key only appear in <code>tools/list</code> when that key is
     out.textContent = url;
     cli.textContent = url;
     desk.textContent = url;
+    if (gpt) gpt.textContent = url;
   }
   for (const el of Object.values(inputs)) el.addEventListener('input', rebuild);
   document.getElementById('copy').addEventListener('click', async (e) => {
