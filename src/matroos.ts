@@ -63,7 +63,7 @@ export async function fetchSeries(opts: {
     tstart: formatYYYYMMDDHHMM(opts.start),
     tstop: formatYYYYMMDDHHMM(opts.end),
   });
-  const res = await fetch(`${BASE}?${params}`);
+  const res = await fetch(`${BASE}?${params}`, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`Matroos ${res.status} for ${opts.source}/${opts.unit} at ${opts.loc}`);
   const text = await res.text();
   if (text.includes("no data found")) return [];

@@ -94,6 +94,7 @@ export async function fetchPointForecast(
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
   });
 
   const text = await res.text();

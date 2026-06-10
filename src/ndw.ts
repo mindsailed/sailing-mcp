@@ -25,7 +25,7 @@ export interface BridgeEvent {
 
 async function loadFeed(): Promise<BridgeEvent[]> {
   if (cache && Date.now() - cache.fetchedAt < TTL_MS) return cache.events;
-  const res = await fetch(FEED_URL, { headers: { "user-agent": UA } });
+  const res = await fetch(FEED_URL, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`NDW ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
   const xml = gunzipSync(buf).toString("utf8");

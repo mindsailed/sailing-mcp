@@ -42,6 +42,7 @@ export async function fetchCurrents(opts: CurrentsOptions): Promise<StormglassWe
 
   const res = await fetch(`${BASE}/weather/point?${params}`, {
     headers: { Authorization: opts.key },
+    signal: AbortSignal.timeout(15_000),
   });
   const text = await res.text();
   let json: StormglassWeatherResponse;

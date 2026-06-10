@@ -41,7 +41,7 @@ export async function fetchWorldTides(
   if (opts.includeExtremes) params.append("extremes", "");
   if (opts.datum) params.set("datum", opts.datum);
 
-  const res = await fetch(`${BASE}?${params.toString()}`);
+  const res = await fetch(`${BASE}?${params.toString()}`, { signal: AbortSignal.timeout(15_000) });
   const text = await res.text();
   let json: WorldTidesResponse;
   try {

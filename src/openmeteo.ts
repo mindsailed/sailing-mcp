@@ -102,7 +102,7 @@ export async function fetchWindConsensus(opts: ConsensusOptions): Promise<{
     models: opts.models.join(","),
   });
   const url = `${FORECAST_URL}?${params}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   const text = await res.text();
   if (!res.ok) throw new OpenMeteoError(`Open-Meteo ${res.status}: ${text.slice(0, 500)}`, res.status);
   const data = JSON.parse(text) as ConsensusResponse;
@@ -217,7 +217,7 @@ export async function fetchSailingForecast(
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   const text = await res.text();
   if (!res.ok) {
     throw new OpenMeteoError(

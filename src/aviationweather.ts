@@ -77,14 +77,14 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 export async function fetchMetar(icao: string, hours: number): Promise<MetarReport[]> {
   const url = `${BASE}/metar?ids=${encodeURIComponent(icao)}&format=json&hours=${hours}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`aviationweather METAR ${res.status}`);
   return (await res.json()) as MetarReport[];
 }
 
 export async function fetchTaf(icao: string): Promise<TafReport[]> {
   const url = `${BASE}/taf?ids=${encodeURIComponent(icao)}&format=json`;
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`aviationweather TAF ${res.status}`);
   return (await res.json()) as TafReport[];
 }

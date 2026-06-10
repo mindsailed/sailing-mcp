@@ -15,7 +15,7 @@ async function fetchFeatures(typeName: string, bbox: string): Promise<RawFeature
   const url =
     `${WFS}?service=WFS&version=1.1.0&request=GetFeature` +
     `&typeName=${encodeURIComponent(typeName)}&maxFeatures=200&bbox=${bbox}`;
-  const res = await fetch(url, { headers: { "user-agent": UA } });
+  const res = await fetch(url, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`FIS WFS ${res.status} for ${typeName}`);
   const xml = await res.text();
   return parseFeatures(xml, typeName);

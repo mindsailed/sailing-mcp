@@ -97,6 +97,7 @@ export async function fetchRwsWaterLevel(opts: {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15_000),
     },
   );
 

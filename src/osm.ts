@@ -72,6 +72,7 @@ export async function fetchOsmPois(opts: {
 
   const res = await fetch(`${OVERPASS_URL}?data=${encodeURIComponent(ql)}`, {
     headers: { "user-agent": UA, accept: "application/json" },
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Overpass ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const data = (await res.json()) as OverpassResponse;
@@ -183,6 +184,7 @@ export async function fetchNamedBridges(bbox: {
 
   const res = await fetch(`${OVERPASS_URL}?data=${encodeURIComponent(ql)}`, {
     headers: { "user-agent": UA, accept: "application/json" },
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Overpass ${res.status}`);
   const data = (await res.json()) as OverpassResponse;

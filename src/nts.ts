@@ -184,6 +184,7 @@ async function fetchPage(type: NtsMessageType, daysAhead: number, today: Date, o
     method: "POST",
     headers: { "content-type": "text/xml; charset=utf-8", soapaction: '""' },
     body: buildRequest(type, daysAhead, today, offset),
+    signal: AbortSignal.timeout(20_000),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`NtS ${res.status} for ${type}`);
