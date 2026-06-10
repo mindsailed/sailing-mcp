@@ -1,3 +1,4 @@
+import { XMLParser } from "fast-xml-parser";
 import { haversineKm } from "./osm.js";
 
 const WFS = "https://www.vaarweginformatie.nl/wfswms/services";
@@ -21,31 +22,54 @@ async function fetchFeatures(typeName: string, bbox: string): Promise<RawFeature
   return parseFeatures(xml, typeName);
 }
 
+const fxp = new XMLParser({ ignoreAttributes: true });
+
 function parseFeatures(xml: string, typeName: string): RawFeature[] {
   const local = typeName.replace("app:", "");
-  const re = new RegExp(`<app:${local}\\b[^>]*>([\\s\\S]*?)</app:${local}>`, "g");
+  const featureKey = `app:${local}`;
+  let doc: Record<string, unknown>;
+  try {
+    doc = fxp.parse(xml) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+  const collection = (doc["wfs:FeatureCollection"] ?? doc) as Record<string, unknown>;
+  const rawMembers = collection["gml:featureMember"];
+  const members = toArray(rawMembers as Record<string, unknown> | Record<string, unknown>[] | undefined);
   const out: RawFeature[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xml)) !== null) {
-    const block = m[1];
-    // Drop the bounding-box envelope so we read the real geometry, not the bbox corners.
-    const body = block.replace(/<gml:boundedBy>[\s\S]*?<\/gml:boundedBy>/g, "");
+  for (const member of members) {
+    const feature = (member as Record<string, unknown>)?.[featureKey] as Record<string, unknown> | undefined;
+    if (!feature) continue;
     const fields: Record<string, string> = {};
-    const fre = /<app:([A-Za-z]+)>([^<]+)<\/app:\1>/g;
-    let fm: RegExpExecArray | null;
-    while ((fm = fre.exec(body)) !== null) fields[fm[1]] = decode(fm[2].trim());
-    const coord = firstLonLat(body);
+    for (const [k, v] of Object.entries(feature)) {
+      if (k.startsWith("app:") && (typeof v === "string" || typeof v === "number")) {
+        fields[k.slice(4)] = decode(String(v).trim());
+      }
+    }
+    const coord = firstLonLat(feature);
     if (!coord) continue;
     out.push({ fields, lat: coord.lat, lon: coord.lon });
   }
   return out;
 }
 
-function firstLonLat(body: string): { lat: number; lon: number } | null {
-  const pos = /<gml:pos>([\d.\-]+)\s+([\d.\-]+)<\/gml:pos>/.exec(body);
-  if (pos) return { lon: parseFloat(pos[1]), lat: parseFloat(pos[2]) };
-  const pl = /<gml:posList[^>]*>([\d.\-]+)\s+([\d.\-]+)/.exec(body);
-  if (pl) return { lon: parseFloat(pl[1]), lat: parseFloat(pl[2]) };
+function toArray<T>(v: T | T[] | undefined): T[] {
+  if (v == null) return [];
+  return Array.isArray(v) ? v : [v];
+}
+
+function firstLonLat(obj: unknown): { lat: number; lon: number } | null {
+  if (obj == null || typeof obj !== "object") return null;
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if ((k === "gml:pos" || k === "gml:posList") && typeof v === "string") {
+      const parts = v.trim().split(/\s+/);
+      const a = parseFloat(parts[0]);
+      const b = parseFloat(parts[1]);
+      if (Number.isFinite(a) && Number.isFinite(b)) return { lon: a, lat: b };
+    }
+    const nested = firstLonLat(v);
+    if (nested) return nested;
+  }
   return null;
 }
 

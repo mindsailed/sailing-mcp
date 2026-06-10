@@ -159,7 +159,12 @@ export async function collectVessels(opts: AisSnapshotOptions): Promise<VesselRe
       if (opts.mmsiFilter && opts.mmsiFilter.length > 0) {
         sub.FiltersShipMMSI = opts.mmsiFilter.map(String);
       }
-      ws.send(JSON.stringify(sub));
+      try {
+        ws.send(JSON.stringify(sub));
+      } catch (err) {
+        finish(err instanceof Error ? err : new Error(String(err)));
+        return;
+      }
       timer = setTimeout(finish, Math.max(1, Math.min(15, opts.durationSec)) * 1000);
     });
 
