@@ -678,7 +678,7 @@ function registerWorldTidesTool(server: McpServer, key: string): void {
     {
       title: "Tides — WorldTides (global)",
       description:
-        "Global tide predictions from worldtides.info. Returns high/low water times and optional 30-min height series anywhere on Earth. Requires a WorldTides API key (pass as ?worldtidesKey=... or ?wtKey=... on the MCP URL).",
+        "Global tide predictions from worldtides.info. Returns high/low water times and optional 30-min height series anywhere on Earth. Requires a WorldTides API key (pass as ?worldtidesKey=... or ?wtKey=... on the MCP URL). Defaults to the next `days` from now; pass startDate (ISO yyyy-mm-dd) to get a FUTURE trip's tides.",
       inputSchema: {
         lat: z.number().min(-90).max(90),
         lon: z.number().min(-180).max(180),
@@ -689,6 +689,11 @@ function registerWorldTidesTool(server: McpServer, key: string): void {
           .string()
           .optional()
           .describe("Tidal datum, e.g. CD, LAT, MLLW, MSL. Defaults to provider default."),
+        startDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe("ISO yyyy-mm-dd. Start the prediction window on this date (for a FUTURE trip) instead of now. Covers [startDate, startDate + days]."),
       },
     },
     async (args) => {
@@ -703,6 +708,10 @@ function registerWorldTidesTool(server: McpServer, key: string): void {
           ],
         };
       }
+      // ISO date → Unix seconds at 00:00 UTC (WorldTides `start`).
+      const start = args.startDate
+        ? Math.floor(Date.parse(`${args.startDate}T00:00:00Z`) / 1000)
+        : undefined;
       try {
         const data = await fetchWorldTides({
           lat: args.lat,
@@ -712,6 +721,7 @@ function registerWorldTidesTool(server: McpServer, key: string): void {
           includeExtremes: args.includeExtremes,
           datum: args.datum,
           key,
+          start,
         });
         const text = formatWorldTides(data, {
           lat: args.lat,

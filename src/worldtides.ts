@@ -26,6 +26,12 @@ export interface WorldTidesOptions {
   includeExtremes: boolean;
   key: string;
   datum?: string;
+  /**
+   * Unix timestamp (SECONDS) to start the prediction window at. When set, tides
+   * cover [start, start + days] — the way to get a FUTURE trip's tides instead of
+   * the next N days from now. Omit for "from now".
+   */
+  start?: number;
 }
 
 export async function fetchWorldTides(
@@ -37,6 +43,7 @@ export async function fetchWorldTides(
     days: opts.days.toString(),
     key: opts.key,
   });
+  if (opts.start != null) params.set("start", Math.floor(opts.start).toString());
   if (opts.includeHeights) params.append("heights", "");
   if (opts.includeExtremes) params.append("extremes", "");
   if (opts.datum) params.set("datum", opts.datum);
