@@ -69,6 +69,13 @@ export interface SailingForecastOptions {
   model: OpenMeteoModel;
   includeWaves: boolean;
   includeSst?: boolean;
+  /**
+   * ISO `yyyy-mm-dd`. When BOTH are set, the forecast targets this date window
+   * (Open-Meteo `start_date`/`end_date`) instead of a horizon anchored at now —
+   * so callers can request the days of a FUTURE trip, not the next N hours.
+   */
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface ConsensusOptions {
@@ -76,6 +83,21 @@ export interface ConsensusOptions {
   lon: number;
   hours: number;
   models: OpenMeteoModel[];
+  /** ISO `yyyy-mm-dd` date window (see SailingForecastOptions). */
+  startDate?: string;
+  endDate?: string;
+}
+
+/**
+ * Open-Meteo time-window params. A date range (`start_date`/`end_date`) when both
+ * are given — the correct way to fetch a FUTURE trip window (up to 16 days out) —
+ * otherwise a horizon of `hours` anchored at now. The two are mutually exclusive.
+ */
+function windowParams(opts: { hours: number; startDate?: string; endDate?: string }): Record<string, string> {
+  if (opts.startDate && opts.endDate) {
+    return { start_date: opts.startDate, end_date: opts.endDate };
+  }
+  return { forecast_hours: Math.min(opts.hours, 384).toString() };
 }
 
 interface ConsensusResponse {
@@ -98,8 +120,8 @@ export async function fetchWindConsensus(opts: ConsensusOptions): Promise<{
     hourly: "wind_speed_10m,wind_gusts_10m,wind_direction_10m",
     wind_speed_unit: "kn",
     timezone: "UTC",
-    forecast_hours: Math.min(opts.hours, 384).toString(),
     models: opts.models.join(","),
+    ...windowParams(opts),
   });
   const url = `${FORECAST_URL}?${params}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
@@ -183,8 +205,8 @@ export async function fetchSailingForecast(
       "wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,temperature_2m,cloud_cover,precipitation",
     wind_speed_unit: "kn",
     timezone: "UTC",
-    forecast_hours: Math.min(opts.hours, 384).toString(),
     models: opts.model,
+    ...windowParams(opts),
   });
 
   const fPromise = fetchJson<ForecastResponse>(`${FORECAST_URL}?${forecastParams}`);
@@ -203,7 +225,7 @@ export async function fetchSailingForecast(
         .filter(Boolean)
         .join(","),
       timezone: "UTC",
-      forecast_hours: Math.min(opts.hours, 384).toString(),
+      ...windowParams(opts),
     });
     mPromise = fetchJson<MarineResponse>(`${MARINE_URL}?${marineParams}`);
   }

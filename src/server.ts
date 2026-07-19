@@ -298,7 +298,7 @@ function registerOpenMeteoTool(server: McpServer): void {
     {
       title: "Sailing forecast via Open-Meteo (free)",
       description:
-        "Free alternative to Windy. Uses Open-Meteo Forecast + Marine API. No key required. Returns wind in knots, gust, direction, pressure, temperature, clouds, precipitation, and (optionally) wave height/direction/period and swell. ECMWF, GFS, ICON, UKMO, Météo-France and JMA available. Hourly steps; horizon up to 384h.",
+        "Free alternative to Windy. Uses Open-Meteo Forecast + Marine API. No key required. Returns wind in knots, gust, direction, pressure, temperature, clouds, precipitation, and (optionally) wave height/direction/period and swell. ECMWF, GFS, ICON, UKMO, Météo-France and JMA available. Hourly steps. Default: a horizon of `hours` from now (max 384h). For a FUTURE trip, pass startDate+endDate (ISO yyyy-mm-dd) to fetch exactly those days (up to ~16 days ahead) instead.",
       inputSchema: {
         lat: z.number().min(-90).max(90),
         lon: z.number().min(-180).max(180),
@@ -322,6 +322,18 @@ function registerOpenMeteoTool(server: McpServer): void {
           .boolean()
           .default(false)
           .describe("Add sea-surface temperature (°C) from Marine API. Useful for sea-breeze and comfort estimates."),
+        startDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe(
+            "ISO yyyy-mm-dd. With endDate, fetch this DATE WINDOW (e.g. the days of a future trip) instead of a horizon from now — Open-Meteo covers up to ~16 days ahead. Overrides `hours`.",
+          ),
+        endDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe("ISO yyyy-mm-dd. End of the date window (inclusive). Use together with startDate."),
       },
     },
     async (args) => {
@@ -333,6 +345,8 @@ function registerOpenMeteoTool(server: McpServer): void {
           model: args.model as OpenMeteoModel,
           includeWaves: args.includeWaves,
           includeSst: args.includeSst,
+          startDate: args.startDate,
+          endDate: args.endDate,
         });
         const text = formatOpenMeteo(data, {
           lat: args.lat,
@@ -392,6 +406,16 @@ function registerWindConsensusTool(server: McpServer): void {
           .max(8)
           .default(["ecmwf_ifs025", "gfs_seamless", "icon_eu", "ukmo_seamless", "meteofrance_arpege_europe"])
           .describe("Models to compare. Defaults to ECMWF + GFS + ICON-EU + UKMO + Météo-France ARPEGE."),
+        startDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe("ISO yyyy-mm-dd. With endDate, compare models over this DATE WINDOW (a future trip) instead of a horizon from now. Overrides `hours`."),
+        endDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe("ISO yyyy-mm-dd. End of the date window (inclusive). Use together with startDate."),
       },
     },
     async (args) => {
@@ -401,6 +425,8 @@ function registerWindConsensusTool(server: McpServer): void {
           lon: args.lon,
           hours: args.hours,
           models: args.models as OpenMeteoModel[],
+          startDate: args.startDate,
+          endDate: args.endDate,
         });
         const text = formatWindConsensus(data, {
           lat: args.lat,
